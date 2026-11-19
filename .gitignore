@@ -1,0 +1,18 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# Storage & Temporary Files
+storage/downloads/
+storage/temp/
+storage/exports/*.mp4
+!storage/exports/.gitkeep
+
+# Node & Remotion
+node_modules/
+remotion/out/
+remotion/node_modules/
+.DS_Store
+

@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GTA 6 Viral Clipper AI | YouTube to Shorts & Reels</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="app-background">
+    <div class="glow-orb orb-1"></div>
+    <div class="glow-orb orb-2"></div>
+  </div>
+
+  <header class="app-header">
+    <div class="header-content">
+      <div class="logo-area">
+        <span class="logo-badge">GTA VI</span>
+        <div class="logo-text">
+          <h1>VIRAL CLIPPER <span>AI</span></h1>
+          <p>YouTube to Shorts, Reels & TikTok in 60FPS 9:16</p>
+        </div>
+      </div>
+      <div class="header-badges">
+        <span class="badge hardware-badge" id="hw-badge">⚡ VideoToolbox GPU Active</span>
+        <span class="badge copyright-badge">🛡️ Anti-Copyright Shield</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="main-container">
+    <!-- Input Section -->
+    <section class="card input-card">
+      <div class="card-header">
+        <h2>Drop Any Video or YouTube Link</h2>
+        <p>Our AI scans audio energy, speech density, and fast action cuts to automatically extract viral moments.</p>
+      </div>
+
+      <div class="input-group">
+        <div class="url-input-wrapper">
+          <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" stroke-width="2" stroke-linecap="round"/>
+            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          <input type="text" id="video-url" placeholder="Paste YouTube link (e.g. GTA 6 Trailer, Walkthrough, Gameplay)..." value="https://www.youtube.com/watch?v=QdBZY2fkU-0">
+          <button id="paste-btn" class="btn-secondary" title="Paste from clipboard">Paste</button>
+        </div>
+
+        <div class="or-divider"><span>OR DROP LOCAL VIDEO FILE</span></div>
+
+        <div class="drop-zone" id="drop-zone">
+          <input type="file" id="file-input" accept="video/mp4,video/mkv,video/webm" style="display: none;">
+          <div class="drop-content" id="drop-content">
+            <svg class="upload-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" stroke-width="2" stroke-linecap="round"/>
+              <polyline points="17 8 12 3 7 8" stroke-width="2" stroke-linecap="round"/>
+              <line x1="12" y1="3" x2="12" y2="15" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            <p><strong>Click to browse</strong> or drag and drop local MP4/MKV</p>
+            <span class="file-hint">Supports 4K, 1080p, 60fps</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Presets -->
+      <div class="presets-bar">
+        <span class="label">Presets:</span>
+        <button class="preset-pill active" data-preset="gta6_viral">🔥 GTA 6 Viral Short</button>
+        <button class="preset-pill" data-preset="story_cutscene">🌴 Story & Dialogue</button>
+        <button class="preset-pill" data-preset="action_montage">🚗 Pure Gameplay Action</button>
+      </div>
+
+      <!-- Pro Settings Collapse -->
+      <details class="pro-settings" open>
+        <summary>
+          <span>Advanced Viral Customizations</span>
+          <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="6 9 12 15 18 9"/></svg>
+        </summary>
+        <div class="settings-grid">
+          <!-- Layout Selection -->
+          <div class="setting-item">
+            <label>9:16 Video Layout</label>
+            <div class="options-group" id="layout-group">
+              <label class="radio-card active">
+                <input type="radio" name="layout" value="split" checked>
+                <div class="radio-ui">
+                  <div class="mini-preview split-icon">
+                    <div class="top-half">GTA 6</div>
+                    <div class="bot-half">Gameplay</div>
+                  </div>
+                  <span>Viral Split</span>
+                </div>
+              </label>
+              <label class="radio-card">
+                <input type="radio" name="layout" value="blur">
+                <div class="radio-ui">
+                  <div class="mini-preview blur-icon">
+                    <div class="ambient-bg"></div>
+                    <div class="center-content">16:9</div>
+                  </div>
+                  <span>Ambient Blur</span>
+                </div>
+              </label>
+              <label class="radio-card">
+                <input type="radio" name="layout" value="crop">
+                <div class="radio-ui">
+                  <div class="mini-preview crop-icon">
+                    <div class="full-916">Center</div>
+                  </div>
+                  <span>Smart Crop</span>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <!-- Subtitle Style -->
+          <div class="setting-item">
+            <label>Action Subtitle Style</label>
+            <div class="options-group" id="subtitle-group">
+              <label class="radio-card active">
+                <input type="radio" name="subtitle_style" value="hormozi" checked>
+                <div class="radio-ui">
+                  <span class="sub-sample hormozi-sample">HORMOZI POP</span>
+                  <span>Yellow Pop</span>
+                </div>
+              </label>
+              <label class="radio-card">
+                <input type="radio" name="subtitle_style" value="vice_city">
+                <div class="radio-ui">
+                  <span class="sub-sample vice-sample">VICE CITY</span>
+                  <span>Cyan / Pink</span>
+                </div>
+              </label>
+              <label class="radio-card">
+                <input type="radio" name="subtitle_style" value="clean">
+                <div class="radio-ui">
+                  <span class="sub-sample clean-sample">MINIMAL</span>
+                  <span>Classic White</span>
+                </div>
+              </label>
+            </div>
+          </div>
+
+          <!-- Number of Clips -->
+          <div class="setting-item slider-item">
+            <div class="slider-header">
+              <label>Target Clips to Extract</label>
+              <span id="clips-val">3 Clips</span>
+            </div>
+            <input type="range" id="clips-slider" min="1" max="5" value="3" step="1">
+          </div>
+
+          <!-- Clip Duration -->
+          <div class="setting-item slider-item">
+            <div class="slider-header">
+              <label>Clip Target Duration</label>
+              <span id="dur-val">40 Seconds</span>
+            </div>
+            <input type="range" id="dur-slider" min="20" max="60" value="40" step="5">
+          </div>
+        </div>
+
+        <!-- Anti Copyright Switch -->
+        <div class="shield-toggle-row">
+          <div class="shield-info">
+            <div class="shield-title">
+              <span class="shield-icon">🛡️</span>
+              <strong>Anti-Copyright Transformative Shield</strong>
+              <span class="shield-badge">Recommended</span>
+            </div>
+            <p>Applies micro pitch shift, 1.03x tempo adjust, subtle cinematic color grading, and framing vignette to safely bypass automated Content ID hashing.</p>
+          </div>
+          <label class="switch">
+            <input type="checkbox" id="anti-copyright-toggle" checked>
+            <span class="slider round"></span>
+          </label>
+        </div>
+      </details>
+
+      <!-- Action Button -->
+      <div class="action-row">
+        <button id="generate-btn" class="btn-primary">
+          <span class="btn-shine"></span>
+          <span class="btn-icon">⚡</span>
+          <span class="btn-text">Generate Viral Clips Now</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- Progress Tracker (Hidden by default) -->
+    <section class="card progress-card" id="progress-card" style="display: none;">
+      <div class="progress-header">
+        <div class="status-indicator">
+          <div class="spinner"></div>
+          <div>
+            <h3 id="progress-status-title">Processing Video...</h3>
+            <p id="progress-status-detail">Initializing clipping pipeline...</p>
+          </div>
+        </div>
+        <span class="progress-pct" id="progress-pct">0%</span>
+      </div>
+
+      <div class="progress-bar-track">
+        <div class="progress-bar-fill" id="progress-fill" style="width: 0%;"></div>
+      </div>
+
+      <!-- Live Terminal Output -->
+      <div class="live-terminal">
+        <div class="terminal-bar">
+          <span class="terminal-dot red"></span>
+          <span class="terminal-dot yellow"></span>
+          <span class="terminal-dot green"></span>
+          <span class="terminal-title">clipper_engine.log</span>
+        </div>
+        <div class="terminal-body" id="terminal-body">
+          <div class="log-line info">[0%] Pipeline initialized. Ready.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Generated Clips Section (Hidden until ready) -->
+    <section class="results-section" id="results-section" style="display: none;">
+      <div class="section-title">
+        <h2>🔥 Generated Viral Clips & SEO Packages</h2>
+        <p>Ready to upload immediately to Instagram, YouTube Shorts, TikTok and Rumble.</p>
+      </div>
+
+      <div class="clips-grid" id="clips-grid">
+        <!-- Rendered dynamically -->
+      </div>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    <p>GTA 6 Viral Clipper AI • Powered by FFmpeg, Whisper, yt-dlp & Antigravity</p>
+  </footer>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
+
