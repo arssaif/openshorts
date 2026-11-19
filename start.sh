@@ -8,8 +8,17 @@ cd "$DIR"
 PORT=${1:-8000}
 
 # Activate virtual environment if present
+PYTHON="python3"
 if [ -d ".venv" ]; then
-    source .venv/bin/activate
+    source .venv/bin/activate 2>/dev/null || true
+    if [ -f ".venv/bin/python3" ]; then
+        PYTHON=".venv/bin/python3"
+    fi
+elif [ -d "venv" ]; then
+    source venv/bin/activate 2>/dev/null || true
+    if [ -f "venv/bin/python3" ]; then
+        PYTHON="venv/bin/python3"
+    fi
 fi
 
 echo "=========================================================="
@@ -26,5 +35,5 @@ done
 (sleep 1.5 && (open "http://localhost:$PORT" 2>/dev/null || xdg-open "http://localhost:$PORT" 2>/dev/null || echo "Open http://localhost:$PORT in your browser")) &
 
 # Start FastAPI server
-python3 server.py --port "$PORT"
+"$PYTHON" server.py --port "$PORT"
 
