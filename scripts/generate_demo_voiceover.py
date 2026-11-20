@@ -43,19 +43,19 @@ def main():
     kokoro = Kokoro(str(MODEL_PATH), str(VOICES_PATH))
 
     voice_lines = [
-        ("line1", "Welcome to OpenShorts AI, the autonomous video clipper for gaming and viral content.", 0.6, 1.4),
-        ("line2", "Customize vertical nine sixteen layouts, karaoke subtitle styles, and focus sections.", 6.0, 1.4),
-        ("line3", "Our AI scans rapid scene cuts, loudness spikes, and audience excitement in comments.", 11.2, 1.4),
-        ("line4", "Extract sixty F P S viral moments with transformative anti copyright protection.", 16.2, 1.3),
-        ("line5", "Get platform-optimized titles, hashtags, and one-click clean captions ready to post.", 22.8, 1.4)
+        ("line1", "Welcome to OpenShorts AI, the autonomous video clipper for gaming and viral content.", 0.5, 1.4),
+        ("line2", "Customize vertical nine sixteen layouts, karaoke subtitle styles, and focus sections.", 6.2, 1.4),
+        ("line3", "Our AI scans rapid scene cuts, loudness spikes, and audience excitement in comments.", 11.9, 1.4),
+        ("line4", "Extract sixty F P S viral moments with transformative anti copyright protection.", 17.2, 1.3),
+        ("line5", "Get platform-optimized titles, hashtags, and one-click clean captions ready to post.", 23.0, 1.4)
     ]
 
     total_samples = int(TARGET_SR * TOTAL_DUR)
     master = np.zeros((total_samples, 2), dtype=np.float32)
 
     for name, text, start_sec, vol in voice_lines:
-        print(f"🗣️ Generating Kokoro TTS: '{text[:40]}...' at t={start_sec}s")
-        samples, sr = kokoro.create(text, voice="am_adam", speed=1.12)
+        print(f"🗣️ Generating Kokoro TTS (af_heart): '{text[:40]}...' at t={start_sec}s")
+        samples, sr = kokoro.create(text, voice="af_heart", speed=1.14)
         wav_path = TEMP_DIR / f"{name}.wav"
         sf.write(str(wav_path), samples, sr)
 
@@ -75,11 +75,13 @@ def main():
     env = np.ones(game_len, dtype=np.float32)
     for i in range(game_len):
         t = 15.4 + (i / TARGET_SR)
-        if t < 21.5:
-            env[i] = 0.45
-        elif t < 22.8:
+        if t < 17.2:
             env[i] = 0.85
-        elif t < 27.6:
+        elif t < 22.6:
+            env[i] = 0.45
+        elif t < 23.0:
+            env[i] = 0.85
+        elif t < 28.0:
             env[i] = 0.40
         else:
             env[i] = 0.85
