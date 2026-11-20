@@ -42,6 +42,7 @@ class ClipRequest(BaseModel):
     layout: str = "split" # "split", "blur", "crop"
     enable_anti_copyright: bool = True
     subtitle_style: str = "hormozi" # "hormozi", "vice_city", "clean"
+    video_section: str = "full" # "full", "first_half", "middle", "last_half"
 
 @app.get("/api/health")
 async def health():
@@ -68,6 +69,7 @@ def run_job_task(job_id: str, req: ClipRequest):
             layout=req.layout,
             enable_anti_copyright=req.enable_anti_copyright,
             subtitle_style=req.subtitle_style,
+            video_section=req.video_section,
             progress_cb=on_progress
         )
         jobs_state[job_id]["status"] = "completed"

@@ -3,6 +3,12 @@
 > **Autonomous AI Video Clipping Engine for YouTube, Gaming & Viral Content**  
 > Turn long YouTube videos, trailers, and gameplay walkthroughs into viral 9:16 vertical shorts (Reels, Shorts, TikTok, Rumble) with Hormozi-style animated karaoke subtitles, anti-copyright transformative shields, and SEO-proof metadata packages.
 
+<div align="center">
+  <img src="assets/demo.gif" alt="OpenShorts AI Demo" width="100%" />
+  <p><em>⚡ Autonomous Web Dashboard: YouTube Ingestion &bull; Live Pipeline Progress &bull; 9:16 Split &amp; Blur &bull; Alex Hormozi Karaoke Subtitles &bull; 1-Click SEO Packages</em></p>
+  <p>🔊 <strong><a href="assets/demo.mp4">Watch Full High-Definition Demo Video with Kokoro AI Voiceover & Audio (assets/demo.mp4)</a></strong></p>
+</div>
+
 ---
 
 ## ⚡ Key Features
@@ -12,7 +18,11 @@
   - **Audio Energy**: Analyzes EBU R128 loudness spikes, explosions, engine revs, and laughter peaks.
   - **Scene Cut Detection**: Scans camera cuts and action velocity with FFmpeg `select='gt(scene,0.35)'`.
   - **Speech & Keyword Density**: Scores segments on viral keywords (*lucia, leak, secret, reveal, insane, vice city*).
+  - **💬 Audience Reaction & Comment Heatmap**: Automatically parses YouTube comments & live chat for timestamp references (`14:20`, `1:05:30`) and crowd excitement keywords (*bam, amazing, cool, insane, clutch, holy, pog*).
   - **3-Second Hook Rule**: Prioritizes moments with immediate high-impact opening frames.
+- **⏱️ Long Stream Section Targeting (4h+ Gameplay / Walkthroughs)**:
+  - Choose video focus sections: **First Half (0-50%)**, **Middle (25-75%)**, **Last Half (50-100%)**, or **Full Video**.
+  - Smart section streaming downloads only the targeted high-action window without needing gigabytes of entire 4-hour recordings.
 - **🛡️ Anti-Copyright & Content ID Transformative Shield**:
   - Micro-tempo adjustment (`1.03x`) and pitch modulation (breaks acoustic audio fingerprinting).
   - Subtle cinematic color grading (`curves`, `contrast=1.07`, `saturation=1.10`) and edge vignette.
@@ -81,6 +91,7 @@ CLI Parameters:
 - `--duration`, `-d`: Target length per clip in seconds (default: `40`).
 - `--layout`, `-l`: `split` (Top: GTA 6, Bottom: Gameplay), `blur` (Ambient Blurred 9:16), or `crop` (Smart Center Crop).
 - `--subtitles`, `-s`: `hormozi` (Yellow pop), `vice_city` (Cyan/Pink), or `clean` (White).
+- `--section`: Focus section for long streams (`full`, `first_half` 0-50%, `middle` 25-75%, `last_half` 50-100%).
 - `--no-anti-copyright`: Turn off anti-copyright filters.
 - `--json`: Output pure JSON for API pipelines.
 
@@ -101,15 +112,20 @@ This boots up Remotion Preview Studio at `http://localhost:3000` where you can t
 ## 📂 Project Structure
 
 ```
-Cliping/
+openshorts/
+├── assets/
+│   ├── demo.gif                   # Animated dashboard walkthrough demo
+│   ├── demo.mp4                   # Full HD demo video with synchronized audio
+│   └── gameplay/                  # Secondary gameplay footage library
 ├── backend/
 │   ├── app.py                     # FastAPI server & SSE streaming
 │   ├── config.py                  # Presets, hardware encoder detection
 │   ├── pipeline.py                # End-to-end clipping orchestrator
 │   └── modules/
-│       ├── downloader.py          # yt-dlp downloader & caption extractor
+│       ├── downloader.py          # yt-dlp downloader & section streamer
 │       ├── transcriber.py         # faster-whisper word-level speech engine
 │       ├── analyzer.py            # AI audio loudness & scene change virality scorer
+│       ├── comment_analyzer.py    # Audience comment timestamps & excitement buzz analyzer
 │       ├── reframer.py            # 9:16 layout generator (Split, Blur, Crop)
 │       ├── anti_copyright.py      # Transformative pitch/tempo/color grade shield
 │       ├── subtitles.py           # Hormozi/Vice City animated karaoke subtitles
@@ -118,6 +134,8 @@ Cliping/
 │   ├── index.html                 # Vice City dark neon dashboard
 │   ├── style.css                  # Responsive Cyberpunk glassmorphic styling
 │   └── app.js                     # Dynamic progress tracker & video player
+├── scripts/
+│   └── record_demo.py             # Playwright browser demo recorder script
 ├── remotion/                      # Remotion React component template
 │   ├── package.json
 │   ├── remotion.config.ts

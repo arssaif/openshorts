@@ -7,24 +7,29 @@ import json
 import logging
 import subprocess
 from pathlib import Path
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 from backend.config import DOWNLOADS_DIR, TEMP_DIR
+from backend.modules.comment_analyzer import CommentAnalyzer
 
 logger = logging.getLogger(__name__)
 
 class VideoDownloader:
     def __init__(self, output_dir: Path = DOWNLOADS_DIR):
         self.output_dir = output_dir
+        self.comment_analyzer = CommentAnalyzer()
 
-    def extract_info(self, url: str) -> Dict[str, Any]:
-        """Extract metadata without downloading."""
+    def extract_info(self, url: str, fetch_comments: bool = True) -> Dict[str, Any]:
+        """Extract metadata (and comments) without downloading media files."""
         cmd = [
             "yt-dlp",
-            "--extractor-args", "youtube:player_client=android,web",
+            "--extractor-args", "youtube:player_client=android,web;max_comments=150",
             "--dump-json",
-            "--no-playlist",
-            url
+            "--no-playlist"
         ]
+        if fetch_comments:
+            cmd.append("--get-comments")
+        cmd.append(url)
+
         res = subprocess.run(cmd, capture_output=True, text=True)
         if res.returncode != 0:
             # Fallback without extractor args
@@ -35,24 +40,77 @@ class VideoDownloader:
 
         return json.loads(res.stdout)
 
-    def download_video(self, url: str, on_progress=None) -> Dict[str, Any]:
+    def download_video(
+        self,
+        url: str,
+        video_section: str = "full",
+        on_progress=None
+    ) -> Dict[str, Any]:
         """
-        Download video + audio, plus auto-generated subtitles if present.
+        Download video + audio with smart section targeting (first_half, middle, last_half, full)
+        and auto-extracts viewer comments and discussion spikes.
         """
         self.output_dir.mkdir(parents=True, exist_ok=True)
         
         if on_progress:
-            on_progress("Extracting YouTube stream information...", 10)
+            on_progress("Extracting stream metadata & audience discussion comments...", 10)
 
-        info = self.extract_info(url)
+        info = self.extract_info(url, fetch_comments=True)
         video_id = info.get("id")
         video_title = info.get("title", "GTA 6 Video")
         video_duration = float(info.get("duration", 0) or 0)
+        raw_comments = info.get("comments", [])
+
+        # Parse timestamp comments & audience excitement
+        timestamp_comments = self.comment_analyzer.parse_timestamp_comments(raw_comments)
+        if on_progress and timestamp_comments:
+            on_progress(f"Found {len(timestamp_comments)} viewer timestamp reactions in comments!", 13)
 
         output_template = str(self.output_dir / f"{video_id}.%(ext)s")
 
-        if on_progress:
-            on_progress(f"Downloading stream: '{video_title[:45]}...' ({int(video_duration//60)}m)", 15)
+        # Determine target video section (first_half, middle, last_half, full)
+        if video_section == "first_half":
+            sec_start = 0.0
+            sec_end = video_duration * 0.5
+        elif video_section == "middle":
+            sec_start = video_duration * 0.25
+            sec_end = video_duration * 0.75
+        elif video_section == "last_half":
+            sec_start = video_duration * 0.5
+            sec_end = video_duration
+        else: # "full"
+            sec_start = 0.0
+            sec_end = video_duration
+
+        section_len = max(1.0, sec_end - sec_start)
+
+        # For long gameplay streams (> 30 mins in section), select high-energy window
+        if section_len > 1800.0:
+            # Check if comments highlight high discussion cluster in this section
+            clusters = self.comment_analyzer.find_peak_discussion_clusters(timestamp_comments, sec_start, sec_end)
+            if clusters and clusters[0]["count"] >= 2:
+                top_center = clusters[0]["center_time"]
+                dl_start = max(sec_start, top_center - 900.0)
+                dl_end = min(sec_end, dl_start + 2100.0)
+                if on_progress:
+                    on_progress(f"Targeting {video_section.replace('_', ' ').title()} around crowd buzz ({int(top_center//60)}m)...", 15)
+            else:
+                if video_section == "first_half":
+                    dl_start = 0.0
+                    dl_end = min(sec_end, 2100.0)
+                elif video_section == "middle":
+                    mid = (sec_start + sec_end) / 2.0
+                    dl_start = max(sec_start, mid - 1050.0)
+                    dl_end = min(sec_end, mid + 1050.0)
+                elif video_section == "last_half":
+                    dl_start = max(sec_start, sec_end - 2100.0)
+                    dl_end = sec_end
+                else:
+                    dl_start = 0.0
+                    dl_end = min(video_duration, 2100.0)
+        else:
+            dl_start = sec_start
+            dl_end = sec_end
 
         cmd = [
             "yt-dlp",
@@ -66,13 +124,17 @@ class VideoDownloader:
             "-o", output_template
         ]
 
-        # For ultra long gameplay / walkthrough streams (> 20 mins), cap download to first 20 mins for fast processing
+        section_offset = 0.0
         effective_duration = video_duration
-        if video_duration > 1200:
+        if dl_start > 0 or dl_end < video_duration:
+            h1, m1, s1 = int(dl_start // 3600), int((dl_start % 3600) // 60), int(dl_start % 60)
+            h2, m2, s2 = int(dl_end // 3600), int((dl_end % 3600) // 60), int(dl_end % 60)
+            time_spec = f"*{h1:02d}:{m1:02d}:{s1:02d}-{h2:02d}:{m2:02d}:{s2:02d}"
+            cmd.extend(["--download-sections", time_spec])
+            section_offset = dl_start
+            effective_duration = dl_end - dl_start
             if on_progress:
-                on_progress(f"Long-form stream ({int(video_duration//60)}m): Smart clipping first 20m for viral hooks...", 18)
-            cmd.extend(["--download-sections", "*00:00:00-00:20:00"])
-            effective_duration = 1200.0
+                on_progress(f"Smart clipping {video_section.replace('_', ' ').title()} window ({h1:02d}:{m1:02d}:{s1:02d} - {h2:02d}:{m2:02d}:{s2:02d})...", 18)
 
         cmd.append(url)
 
@@ -112,8 +174,12 @@ class VideoDownloader:
             "id": video_id,
             "title": video_title,
             "duration": effective_duration,
+            "full_duration": video_duration,
             "video_path": str(video_path),
             "subtitle_path": str(sub_path) if sub_path else None,
             "description": info.get("description", ""),
             "uploader": info.get("uploader", ""),
+            "section_offset": section_offset,
+            "timestamp_comments": timestamp_comments,
+            "raw_comments": raw_comments
         }

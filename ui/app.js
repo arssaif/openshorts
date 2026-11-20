@@ -143,6 +143,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
   bindRadioGroup("#layout-group");
   bindRadioGroup("#subtitle-group");
+  bindRadioGroup("#section-group");
 
   // Sliders
   clipsSlider.addEventListener("input", (e) => {
@@ -171,6 +172,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const layout = document.querySelector("#layout-group input:checked").value;
     const subStyle = document.querySelector("#subtitle-group input:checked").value;
+    const sectionInput = document.querySelector("#section-group input:checked");
+    const videoSection = sectionInput ? sectionInput.value : "full";
     const targetClips = parseInt(clipsSlider.value);
     const clipDur = parseFloat(durSlider.value);
     const antiCopy = antiCopyrightToggle.checked;
@@ -184,7 +187,7 @@ document.addEventListener("DOMContentLoaded", () => {
     generateBtn.style.opacity = "0.5";
 
     appendLog(`Job initialized for: ${url.startsWith("http") ? url : "Local video"}`);
-    appendLog(`Settings: Layout=${layout}, Subtitles=${subStyle}, AntiCopyright=${antiCopy}`);
+    appendLog(`Settings: Layout=${layout}, Subtitles=${subStyle}, Section=${videoSection}, AntiCopyright=${antiCopy}`);
 
     try {
       const response = await fetch("/api/clip", {
@@ -196,7 +199,8 @@ document.addEventListener("DOMContentLoaded", () => {
           clip_duration: clipDur,
           layout: layout,
           enable_anti_copyright: antiCopy,
-          subtitle_style: subStyle
+          subtitle_style: subStyle,
+          video_section: videoSection
         })
       });
 
@@ -279,8 +283,9 @@ document.addEventListener("DOMContentLoaded", () => {
               <button class="seo-tab-btn" data-tab="tt">🎵 TikTok</button>
               <button class="seo-tab-btn" data-tab="rb">🟢 Rumble</button>
             </div>
-            <div class="seo-content-area" id="seo-box-${i}">
-              ${clip.seo.instagram.caption}
+            <div class="seo-content-area" id="seo-box-${i}">${clip.seo.instagram.caption}</div>
+            <div class="sound-tip-banner" id="sound-tip-${i}" style="display: none;">
+              🎧 <strong>Sound Tip:</strong> <span>${clip.seo.tiktok.sound_tip || "Use trending viral audio"}</span>
             </div>
           </div>
 
@@ -296,6 +301,7 @@ document.addEventListener("DOMContentLoaded", () => {
       // Tab click events
       const tabBtns = card.querySelectorAll(".seo-tab-btn");
       const contentBox = card.querySelector(`#seo-box-${i}`);
+      const soundTipBox = card.querySelector(`#sound-tip-${i}`);
       const copyBtn = card.querySelector(`#copy-btn-${i}`);
 
       let currentPlatform = "ig";
@@ -303,7 +309,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const getPlatformText = (plat) => {
         if (plat === "ig") return clip.seo.instagram.caption;
         if (plat === "yt") return `${clip.seo.youtube.title}\n\n${clip.seo.youtube.description}\n\nTAGS:\n${clip.seo.youtube.tags}`;
-        if (plat === "tt") return `${clip.seo.tiktok.caption}\n\n💡 Sound Tip: ${clip.seo.tiktok.sound_tip}`;
+        if (plat === "tt") return clip.seo.tiktok.caption; // Clean caption only - no soundtip contamination!
         if (plat === "rb") return `${clip.seo.rumble.title}\n\n${clip.seo.rumble.description}\n\nTags: ${clip.seo.rumble.tags}`;
         return "";
       };
@@ -314,6 +320,13 @@ document.addEventListener("DOMContentLoaded", () => {
           btn.classList.add("active");
           currentPlatform = btn.dataset.tab;
           contentBox.textContent = getPlatformText(currentPlatform);
+
+          // Show sound tip banner advisory only on TikTok tab
+          if (currentPlatform === "tt" && clip.seo.tiktok.sound_tip) {
+            soundTipBox.style.display = "flex";
+          } else {
+            soundTipBox.style.display = "none";
+          }
         });
       });
 

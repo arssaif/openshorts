@@ -8,7 +8,9 @@ import json
 import logging
 import subprocess
 from pathlib import Path
-from typing import List, Dict, Any, Tuple
+from typing import List, Dict, Any, Tuple, Optional
+
+from backend.modules.comment_analyzer import CommentAnalyzer
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +24,7 @@ VIRAL_KEYWORDS = {
 
 class ViralityAnalyzer:
     def __init__(self):
-        pass
+        self.comment_analyzer = CommentAnalyzer()
 
     def detect_scene_changes(self, video_path: str, max_duration: float = 600.0) -> List[float]:
         """
@@ -78,30 +80,34 @@ class ViralityAnalyzer:
         end_time: float,
         scene_timestamps: List[float],
         audio_energy: List[Dict[str, float]],
-        transcript_segments: List[Dict[str, Any]]
+        transcript_segments: List[Dict[str, Any]],
+        timestamp_comments: Optional[List[Dict[str, Any]]] = None,
+        section_offset: float = 0.0
     ) -> Dict[str, Any]:
         """
-        Calculates the virality score (0-100) for a given time window.
+        Calculates the virality score (0-100) for a given time window,
+        incorporating scene changes, audio loudness, speech keywords,
+        and audience comment excitement (bam, amazing, cool, etc.).
         """
         duration = end_time - start_time
         if duration <= 0:
             return {"score": 0, "hook": "", "reasons": []}
 
-        # 1. Action Density (scene changes per 10s)
+        # 1. Action Density (scene changes per 10s) - max 25 points
         scenes_in_window = [t for t in scene_timestamps if start_time <= t <= end_time]
         scene_rate = len(scenes_in_window) / (duration / 10.0)
-        action_score = min(30.0, scene_rate * 7.5) # Max 30 points
+        action_score = min(25.0, scene_rate * 6.5)
 
-        # 2. Audio Peak & Average Energy
+        # 2. Audio Peak & Average Energy - max 25 points
         energies = [p["energy"] for p in audio_energy if start_time <= p["time"] <= end_time]
         if energies:
             avg_energy = sum(energies) / len(energies)
             max_energy = max(energies)
-            audio_score = (avg_energy * 0.4 + max_energy * 0.6) * 30.0 # Max 30 points
+            audio_score = (avg_energy * 0.4 + max_energy * 0.6) * 25.0
         else:
-            audio_score = 15.0 # Neutral default
+            audio_score = 12.0 # Neutral default
 
-        # 3. Speech & Viral Keyword Detection
+        # 3. Speech & Viral Keyword Detection - max 15 points
         segments_in_window = [
             s for s in transcript_segments
             if (s["start"] >= start_time and s["start"] < end_time) or
@@ -113,11 +119,11 @@ class ViralityAnalyzer:
         matched_keywords = []
         for kw, weight in VIRAL_KEYWORDS.items():
             if kw in full_text:
-                keyword_score += weight * 4.0
+                keyword_score += weight * 3.0
                 matched_keywords.append(kw)
-        speech_score = min(20.0, keyword_score + (len(segments_in_window) * 2.0)) # Max 20 points
+        speech_score = min(15.0, keyword_score + (len(segments_in_window) * 1.5))
 
-        # 4. First 3 Seconds Hook Score
+        # 4. First 3 Seconds Hook Score - max 15 points
         hook_window = start_time + 3.0
         hook_energies = [p["energy"] for p in audio_energy if start_time <= p["time"] <= hook_window]
         hook_scenes = [t for t in scene_timestamps if start_time <= t <= hook_window]
@@ -125,23 +131,42 @@ class ViralityAnalyzer:
 
         hook_val = 0.0
         if hook_energies and max(hook_energies) > 0.65:
-            hook_val += 8.0
+            hook_val += 6.0
         if hook_scenes:
-            hook_val += 6.0
+            hook_val += 5.0
         if hook_speech:
-            hook_val += 6.0
-        hook_score = min(20.0, hook_val) # Max 20 points
+            hook_val += 4.0
+        hook_score = min(15.0, hook_val)
 
-        total_score = round(min(100.0, action_score + audio_score + speech_score + hook_score), 1)
+        # 5. Audience Comments & Discussion Excitement (bam, amazing, cool, etc.)
+        comment_score = 0.0
+        comment_reasons = []
+        highlight_quote = ""
+        if timestamp_comments:
+            c_data = self.comment_analyzer.score_window(
+                start_time, end_time, timestamp_comments, section_offset=section_offset
+            )
+            comment_score = c_data.get("score", 0.0) # max 25-30 points
+            comment_reasons = c_data.get("reasons", [])
+            highlight_quote = c_data.get("highlight_quote", "")
+            raw_total = action_score + audio_score + speech_score + hook_score + comment_score
+            total_score = round(min(100.0, raw_total), 1)
+        else:
+            # Scale up to 100 if no comment data exists
+            raw_total = (action_score + audio_score + speech_score + hook_score) * 1.25
+            total_score = round(min(100.0, raw_total), 1)
 
         # Hook description for SEO/titles
-        first_sentence = segments_in_window[0]["text"] if segments_in_window else "HIGH OCTANE GTA 6 ACTION"
+        first_sentence = segments_in_window[0]["text"] if segments_in_window else (highlight_quote or "HIGH OCTANE GTA 6 ACTION")
         reasons = []
-        if hook_score > 12:
-            reasons.append("⚡ Explosive 3-second hook")
-        if action_score > 18:
+        # Priority to comment excitement if audience buzzed heavily
+        if comment_reasons:
+            reasons.extend(comment_reasons)
+        if hook_score > 9:
+            reasons.append("⚡ Explosive 3-second opening hook")
+        if action_score > 14:
             reasons.append("🎬 Rapid action & scene cuts")
-        if audio_score > 20:
+        if audio_score > 16:
             reasons.append("🔊 High-energy audio peaks")
         if matched_keywords:
             reasons.append(f"🔥 Viral keywords: {', '.join(matched_keywords[:3])}")
@@ -152,6 +177,7 @@ class ViralityAnalyzer:
             "audio_score": round(audio_score, 1),
             "speech_score": round(speech_score, 1),
             "hook_score": round(hook_score, 1),
+            "comment_score": round(comment_score, 1),
             "hook_text": first_sentence,
             "reasons": reasons,
             "transcript": segments_in_window
@@ -164,6 +190,8 @@ class ViralityAnalyzer:
         transcript_segments: List[Dict[str, Any]],
         target_clips: int = 3,
         clip_duration: float = 40.0,
+        timestamp_comments: Optional[List[Dict[str, Any]]] = None,
+        section_offset: float = 0.0,
         on_progress=None
     ) -> List[Dict[str, Any]]:
         """
@@ -174,8 +202,11 @@ class ViralityAnalyzer:
         scene_timestamps = self.detect_scene_changes(video_path, max_duration=total_duration)
 
         if on_progress:
-            on_progress("Analyzing audio loudness and excitement levels...", 55)
+            on_progress("Analyzing audio loudness and excitement levels...", 53)
         audio_energy = self.detect_audio_energy(video_path, max_duration=total_duration)
+
+        if timestamp_comments and on_progress:
+            on_progress(f"Correlating {len(timestamp_comments)} viewer comments & excitement hotspots...", 56)
 
         # Sliding window evaluation (step = 10s)
         step = 10.0
@@ -185,7 +216,10 @@ class ViralityAnalyzer:
 
         if max_start == 0.0:
             # Video is shorter than target duration, return whole video
-            meta = self.score_window(0.0, total_duration, scene_timestamps, audio_energy, transcript_segments)
+            meta = self.score_window(
+                0.0, total_duration, scene_timestamps, audio_energy,
+                transcript_segments, timestamp_comments, section_offset=section_offset
+            )
             return [{
                 "index": 1,
                 "start": 0.0,
@@ -196,7 +230,10 @@ class ViralityAnalyzer:
 
         while curr <= max_start:
             end = curr + clip_duration
-            meta = self.score_window(curr, end, scene_timestamps, audio_energy, transcript_segments)
+            meta = self.score_window(
+                curr, end, scene_timestamps, audio_energy,
+                transcript_segments, timestamp_comments, section_offset=section_offset
+            )
             candidate_windows.append({
                 "start": round(curr, 2),
                 "end": round(end, 2),
