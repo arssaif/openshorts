@@ -3,6 +3,8 @@ Downloader module using yt-dlp to fetch YouTube video, audio, and captions.
 Uses modern extractor-args for Android/Web clients to prevent bot checks.
 """
 import os
+import sys
+import shutil
 import json
 import logging
 import subprocess
@@ -13,6 +15,19 @@ from backend.modules.comment_analyzer import CommentAnalyzer
 
 logger = logging.getLogger(__name__)
 
+def get_ytdlp_cmd() -> str:
+    """Finds the yt-dlp executable in the current venv, project root, or PATH."""
+    venv_ytdlp = Path(sys.executable).parent / "yt-dlp"
+    if venv_ytdlp.exists():
+        return str(venv_ytdlp)
+    local_venv = Path(__file__).resolve().parents[2] / ".venv" / "bin" / "yt-dlp"
+    if local_venv.exists():
+        return str(local_venv)
+    which = shutil.which("yt-dlp")
+    if which:
+        return which
+    return "yt-dlp"
+
 class VideoDownloader:
     def __init__(self, output_dir: Path = DOWNLOADS_DIR):
         self.output_dir = output_dir
@@ -20,9 +35,10 @@ class VideoDownloader:
 
     def extract_info(self, url: str, fetch_comments: bool = True) -> Dict[str, Any]:
         """Extract metadata (and comments) without downloading media files."""
+        ytdlp_bin = get_ytdlp_cmd()
         cmd = [
-            "yt-dlp",
-            "--extractor-args", "youtube:player_client=android,web;max_comments=150",
+            ytdlp_bin,
+            "--extractor-args", "youtube:player_client=android;max_comments=150",
             "--dump-json",
             "--no-playlist"
         ]
@@ -32,8 +48,8 @@ class VideoDownloader:
 
         res = subprocess.run(cmd, capture_output=True, text=True)
         if res.returncode != 0:
-            # Fallback without extractor args
-            cmd_fallback = ["yt-dlp", "--dump-json", "--no-playlist", url]
+            logger.warning(f"Initial extract_info failed, retrying without extractor args: {res.stderr.strip()[:200]}")
+            cmd_fallback = [ytdlp_bin, "--dump-json", "--no-playlist", url]
             res = subprocess.run(cmd_fallback, capture_output=True, text=True)
             if res.returncode != 0:
                 raise RuntimeError(f"yt-dlp extract_info failed: {res.stderr.strip()}")
@@ -112,14 +128,12 @@ class VideoDownloader:
             dl_start = sec_start
             dl_end = sec_end
 
+        ytdlp_bin = get_ytdlp_cmd()
         cmd = [
-            "yt-dlp",
-            "--extractor-args", "youtube:player_client=android,web",
+            ytdlp_bin,
+            "--extractor-args", "youtube:player_client=android",
             "-f", "bestvideo[height<=1080]+bestaudio/best[height<=1080]/best",
             "--merge-output-format", "mp4",
-            "--write-auto-sub",
-            "--sub-lang", "en",
-            "--sub-format", "vtt/srv3/json3",
             "--no-playlist",
             "-o", output_template
         ]
@@ -138,8 +152,10 @@ class VideoDownloader:
 
         cmd.append(url)
 
+        stderr_lines = []
         process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
         for line in iter(process.stdout.readline, ''):
+            stderr_lines.append(line)
             if "%" in line:
                 try:
                     parts = line.split("%")[0].split()
@@ -150,10 +166,8 @@ class VideoDownloader:
                 except Exception:
                     pass
         process.wait()
-        if process.returncode != 0:
-            logger.warning("Download command returned non-zero, checking if file was created...")
-
-        # Find downloaded video file
+        
+        # Check if video was downloaded
         video_path = self.output_dir / f"{video_id}.mp4"
         if not video_path.exists():
             matches = list(self.output_dir.glob(f"{video_id}*"))
@@ -161,9 +175,35 @@ class VideoDownloader:
             if video_matches:
                 video_path = video_matches[0]
             else:
-                raise FileNotFoundError(f"Downloaded video file not found for video ID: {video_id}")
+                # Primary download failed - try fallback format
+                logger.warning(f"Primary download exited with code {process.returncode}. Output tail:\n" + "".join(stderr_lines[-10:]))
+                if on_progress:
+                    on_progress("Retrying download with adaptive format stream...", 22)
+                fallback_cmd = [
+                    ytdlp_bin,
+                    "-f", "b/best[height<=1080]/best",
+                    "--merge-output-format", "mp4",
+                    "--no-playlist",
+                    "-o", output_template
+                ]
+                if dl_start > 0 or dl_end < video_duration:
+                    fallback_cmd.extend(["--download-sections", time_spec])
+                fallback_cmd.append(url)
+                fb_res = subprocess.run(fallback_cmd, capture_output=True, text=True)
+                if fb_res.returncode != 0:
+                    logger.error(f"Fallback download also failed: {fb_res.stderr.strip()[:300]}")
+                
+                # Check again
+                if not video_path.exists():
+                    matches = list(self.output_dir.glob(f"{video_id}*"))
+                    video_matches = [m for m in matches if m.suffix in [".mp4", ".mkv", ".webm"] and not str(m).endswith(".part")]
+                    if video_matches:
+                        video_path = video_matches[0]
+                    else:
+                        err_tail = "\n".join(stderr_lines[-15:])
+                        raise FileNotFoundError(f"Downloaded video file not found for video ID: {video_id}. yt-dlp output:\n{err_tail}")
 
-        # Check subtitle files
+        # Check subtitle files if available
         sub_files = list(self.output_dir.glob(f"{video_id}*.vtt")) + list(self.output_dir.glob(f"{video_id}*.json3"))
         sub_path = sub_files[0] if sub_files else None
 

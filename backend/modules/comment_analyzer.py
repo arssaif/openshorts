@@ -5,12 +5,28 @@ timestamp references, and viral keywords ('bam', 'amazing', 'cool', 'insane', 'c
 """
 import re
 import math
+import sys
+import shutil
 import logging
 import subprocess
 import json
+from pathlib import Path
 from typing import List, Dict, Any, Optional
 
 logger = logging.getLogger(__name__)
+
+def get_ytdlp_cmd() -> str:
+    """Finds the yt-dlp executable in the current venv, project root, or PATH."""
+    venv_ytdlp = Path(sys.executable).parent / "yt-dlp"
+    if venv_ytdlp.exists():
+        return str(venv_ytdlp)
+    local_venv = Path(__file__).resolve().parents[2] / ".venv" / "bin" / "yt-dlp"
+    if local_venv.exists():
+        return str(local_venv)
+    which = shutil.which("yt-dlp")
+    if which:
+        return which
+    return "yt-dlp"
 
 # Excitement words prioritized for gaming & live gameplay reactions
 EXCITEMENT_KEYWORDS = {
@@ -65,9 +81,10 @@ class CommentAnalyzer:
             return []
 
         try:
+            ytdlp_bin = get_ytdlp_cmd()
             cmd = [
-                "yt-dlp",
-                "--extractor-args", f"youtube:player_client=android,web;max_comments={max_comments}",
+                ytdlp_bin,
+                "--extractor-args", f"youtube:player_client=android;max_comments={max_comments}",
                 "--dump-json",
                 "--get-comments",
                 "--skip-download",

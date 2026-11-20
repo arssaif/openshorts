@@ -6,7 +6,6 @@
 <div align="center">
   <img src="assets/demo.gif" alt="OpenShorts AI Demo" width="100%" />
   <p><em>⚡ Autonomous Web Dashboard: YouTube Ingestion &bull; Live Pipeline Progress &bull; 9:16 Split &amp; Blur &bull; Alex Hormozi Karaoke Subtitles &bull; 1-Click SEO Packages</em></p>
-  <p>🔊 <strong><a href="assets/demo.mp4">Watch Full High-Definition Demo Video with Kokoro AI Voiceover & Audio (assets/demo.mp4)</a></strong></p>
 </div>
 
 ---
