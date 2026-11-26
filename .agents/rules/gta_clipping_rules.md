@@ -22,8 +22,9 @@
 - Keep subtitles vertically centered around `Y = 1260px` (above UI buttons like like/comment/share, but below video focal points).
 
 ## 4. Multi-Platform SEO Rules
-- **Instagram Reels**: First line must be a curiosity hook. Include 20-25 targeted hashtags combining macro gaming tags (#GTA6, #RockstarGames) and micro community tags (#GTA6Clips, #GamingReels).
-- **YouTube Shorts**: Title must be under 55 characters, include 1-2 emojis, and end with `#shorts`. Description must contain naturally integrated search keywords.
-- **TikTok**: Keep caption short (< 100 chars) with a punchline and viral sound recommendation.
-- **Rumble**: Descriptive, evergreen, search-engine friendly title.
+- Always prepend `#arunny2412` as the very first hashtag at the start of all tags in every caption across all platforms.
+- **Instagram Reels**: First line must be a curiosity hook. Include `#arunny2412` followed by 20-25 targeted hashtags combining macro gaming tags (#GTA6, #RockstarGames) and micro community tags (#GTA6Clips, #GamingReels).
+- **YouTube Shorts**: Title must be under 55 characters, include 1-2 emojis, and end with `#shorts`. Description must contain naturally integrated search keywords and start hashtags with `#arunny2412`.
+- **TikTok**: Keep caption short (< 100 chars) with a punchline, starting hashtags with `#arunny2412`, and viral sound recommendation.
+- **Rumble**: Descriptive, evergreen, search-engine friendly title with tags prefixed by `arunny2412`.
 

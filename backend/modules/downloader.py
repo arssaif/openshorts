@@ -56,6 +56,69 @@ class VideoDownloader:
 
         return json.loads(res.stdout)
 
+    def compute_section_window(
+        self,
+        video_duration: float,
+        video_section: str = "full",
+        timestamp_comments: Optional[List[Dict[str, Any]]] = None
+    ) -> Dict[str, Any]:
+        """
+        Computes non-overlapping section bounds and a max-35m download window.
+        """
+        if video_section == "first_half":
+            sec_start = 0.0
+            sec_end = video_duration / 3.0
+        elif video_section == "middle":
+            sec_start = video_duration / 3.0
+            sec_end = video_duration * (2.0 / 3.0)
+        elif video_section == "last_half":
+            sec_start = video_duration * (2.0 / 3.0)
+            sec_end = video_duration
+        else:  # "full"
+            sec_start = 0.0
+            sec_end = video_duration
+
+        section_len = max(1.0, sec_end - sec_start)
+        crowd_center = None
+
+        # For long gameplay streams (> 30 mins in section), select high-energy window
+        if section_len > 1800.0:
+            clusters = self.comment_analyzer.find_peak_discussion_clusters(
+                timestamp_comments or [], sec_start, sec_end
+            )
+            if clusters and clusters[0]["count"] >= 2:
+                top_center = clusters[0]["center_time"]
+                crowd_center = top_center
+                dl_start = max(sec_start, min(sec_end - 2100.0, top_center - 1050.0))
+                dl_end = min(sec_end, dl_start + 2100.0)
+            else:
+                if video_section == "first_half":
+                    dl_start = sec_start
+                    dl_end = min(sec_end, sec_start + 2100.0)
+                elif video_section == "middle":
+                    mid = (sec_start + sec_end) / 2.0
+                    dl_start = max(sec_start, mid - 1050.0)
+                    dl_end = min(sec_end, dl_start + 2100.0)
+                elif video_section == "last_half":
+                    dl_start = max(sec_start, sec_end - 2100.0)
+                    dl_end = sec_end
+                else:
+                    dl_start = 0.0
+                    dl_end = min(video_duration, 2100.0)
+        else:
+            dl_start = sec_start
+            dl_end = sec_end
+
+        section_tag = f"{video_section}_{int(dl_start)}_{int(dl_end)}"
+        return {
+            "sec_start": sec_start,
+            "sec_end": sec_end,
+            "dl_start": dl_start,
+            "dl_end": dl_end,
+            "section_tag": section_tag,
+            "crowd_center": crowd_center
+        }
+
     def download_video(
         self,
         url: str,
@@ -82,99 +145,80 @@ class VideoDownloader:
         if on_progress and timestamp_comments:
             on_progress(f"Found {len(timestamp_comments)} viewer timestamp reactions in comments!", 13)
 
-        output_template = str(self.output_dir / f"{video_id}.%(ext)s")
+        window = self.compute_section_window(video_duration, video_section, timestamp_comments)
+        dl_start = window["dl_start"]
+        dl_end = window["dl_end"]
+        section_tag = window["section_tag"]
+        crowd_center = window["crowd_center"]
 
-        # Determine target video section (first_half, middle, last_half, full)
-        if video_section == "first_half":
-            sec_start = 0.0
-            sec_end = video_duration * 0.5
-        elif video_section == "middle":
-            sec_start = video_duration * 0.25
-            sec_end = video_duration * 0.75
-        elif video_section == "last_half":
-            sec_start = video_duration * 0.5
-            sec_end = video_duration
-        else: # "full"
-            sec_start = 0.0
-            sec_end = video_duration
+        if crowd_center is not None and on_progress:
+            on_progress(f"Targeting {video_section.replace('_', ' ').title()} around crowd buzz ({int(crowd_center//60)}m)...", 15)
 
-        section_len = max(1.0, sec_end - sec_start)
+        target_stem = f"{video_id}_{section_tag}"
+        output_template = str(self.output_dir / f"{target_stem}.%(ext)s")
 
-        # For long gameplay streams (> 30 mins in section), select high-energy window
-        if section_len > 1800.0:
-            # Check if comments highlight high discussion cluster in this section
-            clusters = self.comment_analyzer.find_peak_discussion_clusters(timestamp_comments, sec_start, sec_end)
-            if clusters and clusters[0]["count"] >= 2:
-                top_center = clusters[0]["center_time"]
-                dl_start = max(sec_start, top_center - 900.0)
-                dl_end = min(sec_end, dl_start + 2100.0)
-                if on_progress:
-                    on_progress(f"Targeting {video_section.replace('_', ' ').title()} around crowd buzz ({int(top_center//60)}m)...", 15)
-            else:
-                if video_section == "first_half":
-                    dl_start = 0.0
-                    dl_end = min(sec_end, 2100.0)
-                elif video_section == "middle":
-                    mid = (sec_start + sec_end) / 2.0
-                    dl_start = max(sec_start, mid - 1050.0)
-                    dl_end = min(sec_end, mid + 1050.0)
-                elif video_section == "last_half":
-                    dl_start = max(sec_start, sec_end - 2100.0)
-                    dl_end = sec_end
-                else:
-                    dl_start = 0.0
-                    dl_end = min(video_duration, 2100.0)
-        else:
-            dl_start = sec_start
-            dl_end = sec_end
+        def _find_section_video() -> Optional[Path]:
+            exact_mp4 = self.output_dir / f"{target_stem}.mp4"
+            if exact_mp4.exists() and exact_mp4.stat().st_size > 10000:
+                return exact_mp4
+            matches = list(self.output_dir.glob(f"{target_stem}.*"))
+            video_matches = [
+                m for m in matches
+                if m.suffix in [".mp4", ".mkv", ".webm"]
+                and not str(m).endswith(".part")
+                and m.stat().st_size > 10000
+            ]
+            return video_matches[0] if video_matches else None
 
-        ytdlp_bin = get_ytdlp_cmd()
-        cmd = [
-            ytdlp_bin,
-            "--extractor-args", "youtube:player_client=android",
-            "-f", "bestvideo[height<=1080]+bestaudio/best[height<=1080]/best",
-            "--merge-output-format", "mp4",
-            "--no-playlist",
-            "-o", output_template
-        ]
+        is_sliced = dl_start > 0 or dl_end < video_duration
+        section_offset = dl_start if is_sliced else 0.0
+        effective_duration = max(1.0, dl_end - dl_start) if is_sliced else video_duration
 
-        section_offset = 0.0
-        effective_duration = video_duration
-        if dl_start > 0 or dl_end < video_duration:
-            h1, m1, s1 = int(dl_start // 3600), int((dl_start % 3600) // 60), int(dl_start % 60)
-            h2, m2, s2 = int(dl_end // 3600), int((dl_end % 3600) // 60), int(dl_end % 60)
-            time_spec = f"*{h1:02d}:{m1:02d}:{s1:02d}-{h2:02d}:{m2:02d}:{s2:02d}"
-            cmd.extend(["--download-sections", time_spec])
-            section_offset = dl_start
-            effective_duration = dl_end - dl_start
+        cached_path = _find_section_video()
+        if cached_path:
+            video_path = cached_path
             if on_progress:
-                on_progress(f"Smart clipping {video_section.replace('_', ' ').title()} window ({h1:02d}:{m1:02d}:{s1:02d} - {h2:02d}:{m2:02d}:{s2:02d})...", 18)
+                on_progress(f"Using cached section video ({target_stem})...", 30)
+        else:
+            ytdlp_bin = get_ytdlp_cmd()
+            cmd = [
+                ytdlp_bin,
+                "--extractor-args", "youtube:player_client=android",
+                "-f", "bestvideo[height<=1080]+bestaudio/best[height<=1080]/best",
+                "--merge-output-format", "mp4",
+                "--no-playlist",
+                "--force-overwrites",
+                "-o", output_template
+            ]
 
-        cmd.append(url)
+            time_spec = None
+            if is_sliced:
+                h1, m1, s1 = int(dl_start // 3600), int((dl_start % 3600) // 60), int(dl_start % 60)
+                h2, m2, s2 = int(dl_end // 3600), int((dl_end % 3600) // 60), int(dl_end % 60)
+                time_spec = f"*{h1:02d}:{m1:02d}:{s1:02d}-{h2:02d}:{m2:02d}:{s2:02d}"
+                cmd.extend(["--download-sections", time_spec])
+                if on_progress:
+                    on_progress(f"Smart clipping {video_section.replace('_', ' ').title()} window ({h1:02d}:{m1:02d}:{s1:02d} - {h2:02d}:{m2:02d}:{s2:02d})...", 18)
 
-        stderr_lines = []
-        process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
-        for line in iter(process.stdout.readline, ''):
-            stderr_lines.append(line)
-            if "%" in line:
-                try:
-                    parts = line.split("%")[0].split()
-                    pct = float(parts[-1])
-                    if on_progress:
-                        scaled = 20 + int(pct * 0.15)
-                        on_progress(f"Downloading media stream: {pct:.1f}%", scaled)
-                except Exception:
-                    pass
-        process.wait()
-        
-        # Check if video was downloaded
-        video_path = self.output_dir / f"{video_id}.mp4"
-        if not video_path.exists():
-            matches = list(self.output_dir.glob(f"{video_id}*"))
-            video_matches = [m for m in matches if m.suffix in [".mp4", ".mkv", ".webm"] and not str(m).endswith(".part")]
-            if video_matches:
-                video_path = video_matches[0]
-            else:
+            cmd.append(url)
+
+            stderr_lines = []
+            process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+            for line in iter(process.stdout.readline, ''):
+                stderr_lines.append(line)
+                if "%" in line:
+                    try:
+                        parts = line.split("%")[0].split()
+                        pct = float(parts[-1])
+                        if on_progress:
+                            scaled = 20 + int(pct * 0.15)
+                            on_progress(f"Downloading media stream: {pct:.1f}%", scaled)
+                    except Exception:
+                        pass
+            process.wait()
+
+            video_path = _find_section_video()
+            if not video_path:
                 # Primary download failed - try fallback format
                 logger.warning(f"Primary download exited with code {process.returncode}. Output tail:\n" + "".join(stderr_lines[-10:]))
                 if on_progress:
@@ -184,27 +228,38 @@ class VideoDownloader:
                     "-f", "b/best[height<=1080]/best",
                     "--merge-output-format", "mp4",
                     "--no-playlist",
+                    "--force-overwrites",
                     "-o", output_template
                 ]
-                if dl_start > 0 or dl_end < video_duration:
+                if time_spec:
                     fallback_cmd.extend(["--download-sections", time_spec])
                 fallback_cmd.append(url)
                 fb_res = subprocess.run(fallback_cmd, capture_output=True, text=True)
                 if fb_res.returncode != 0:
                     logger.error(f"Fallback download also failed: {fb_res.stderr.strip()[:300]}")
-                
-                # Check again
-                if not video_path.exists():
-                    matches = list(self.output_dir.glob(f"{video_id}*"))
-                    video_matches = [m for m in matches if m.suffix in [".mp4", ".mkv", ".webm"] and not str(m).endswith(".part")]
-                    if video_matches:
-                        video_path = video_matches[0]
-                    else:
-                        err_tail = "\n".join(stderr_lines[-15:])
-                        raise FileNotFoundError(f"Downloaded video file not found for video ID: {video_id}. yt-dlp output:\n{err_tail}")
+
+                video_path = _find_section_video()
+                if not video_path:
+                    err_tail = "\n".join(stderr_lines[-15:])
+                    raise FileNotFoundError(f"Downloaded video file not found for section {target_stem}. yt-dlp output:\n{err_tail}")
+
+        # Probe actual downloaded file duration
+        try:
+            probe = subprocess.run(
+                ["ffprobe", "-v", "error", "-show_entries", "format=duration",
+                 "-of", "default=noprint_wrappers=1:nokey=1", str(video_path)],
+                capture_output=True, text=True
+            )
+            probed_dur = float(probe.stdout.strip() or 0)
+            if probed_dur > 0:
+                effective_duration = probed_dur
+        except Exception:
+            pass
 
         # Check subtitle files if available
-        sub_files = list(self.output_dir.glob(f"{video_id}*.vtt")) + list(self.output_dir.glob(f"{video_id}*.json3"))
+        sub_files = list(self.output_dir.glob(f"{target_stem}*.vtt")) + list(self.output_dir.glob(f"{target_stem}*.json3"))
+        if not sub_files:
+            sub_files = list(self.output_dir.glob(f"{video_id}*.vtt")) + list(self.output_dir.glob(f"{video_id}*.json3"))
         sub_path = sub_files[0] if sub_files else None
 
         if on_progress:

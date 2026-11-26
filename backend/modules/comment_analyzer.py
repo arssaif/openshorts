@@ -120,9 +120,9 @@ class CommentAnalyzer:
             likes = int(c.get("like_count") or 0)
             author = c.get("author", "Viewer")
 
-            # Check for timestamp mentions
+            # Check for timestamp mentions (ignore chapter-list / TOC comments with > 5 timestamps)
             matches = list(TIMESTAMP_REGEX.finditer(text))
-            if not matches:
+            if not matches or len(matches) > 5:
                 continue
 
             # Detect excited reaction words

@@ -26,15 +26,20 @@ class AudioTranscriber:
                 self._whisper_model = False
         return self._whisper_model
 
-    def parse_vtt(self, vtt_path: str) -> List[Dict[str, Any]]:
-        """Parses WebVTT subtitles into structured segments and words."""
+    def parse_vtt(
+        self,
+        vtt_path: str,
+        section_offset: float = 0.0,
+        max_duration: Optional[float] = None
+    ) -> List[Dict[str, Any]]:
+        """Parses WebVTT subtitles into structured segments and words, shifted by section_offset."""
         segments = []
         try:
             with open(vtt_path, "r", encoding="utf-8") as f:
                 content = f.read()
 
-            # Pattern for timestamp line: 00:00:01.000 --> 00:00:04.000
-            pattern = re.compile(r"(\d{2}:\d{2}:\d{2}\.\d{3}|\d{2}:\d{2}\.\d{3})\s*-->\s*(\d{2}:\d{2}:\d{2}\.\d{3}|\d{2}:\d{2}\.\d{3})\n(.*?)(?=\n\n|\Z)", re.DOTALL)
+            # Pattern for timestamp line: 00:00:01.000 --> 00:00:04.000 [optional cue settings]
+            pattern = re.compile(r"(\d{2}:\d{2}:\d{2}\.\d{3}|\d{2}:\d{2}\.\d{3})\s*-->\s*(\d{2}:\d{2}:\d{2}\.\d{3}|\d{2}:\d{2}\.\d{3})[^\n]*\n(.*?)(?=\n\n|\Z)", re.DOTALL)
             
             def to_seconds(t_str: str) -> float:
                 parts = t_str.split(":")
@@ -46,10 +51,19 @@ class AudioTranscriber:
                     return int(m) * 60 + float(s)
                 return 0.0
 
+            win_start = max(0.0, section_offset)
+            win_end = (win_start + max_duration) if max_duration is not None else None
+
             for match in pattern.finditer(content):
                 start_str, end_str, text_block = match.groups()
                 start = to_seconds(start_str)
                 end = to_seconds(end_str)
+
+                if end <= win_start:
+                    continue
+                if win_end is not None and start >= win_end:
+                    continue
+
                 # Clean HTML tags like <c> </c>
                 clean_text = re.sub(r"<[^>]+>", "", text_block).strip()
                 if clean_text:
@@ -57,11 +71,19 @@ class AudioTranscriber:
                     w_count = len(words_raw)
                     duration = max(0.1, end - start)
                     w_duration = duration / max(1, w_count)
+
+                    adj_start = max(0.0, start - win_start)
+                    adj_end = max(adj_start, end - win_start)
+                    if max_duration is not None:
+                        adj_end = min(max_duration, adj_end)
                     
                     word_objs = []
                     for i, w in enumerate(words_raw):
-                        w_start = start + i * w_duration
-                        w_end = w_start + w_duration
+                        w_start = max(0.0, (start + i * w_duration) - win_start)
+                        w_end = max(w_start, (start + (i + 1) * w_duration) - win_start)
+                        if max_duration is not None:
+                            w_start = min(max_duration, w_start)
+                            w_end = min(max_duration, w_end)
                         word_objs.append({
                             "word": w,
                             "start": round(w_start, 2),
@@ -69,8 +91,8 @@ class AudioTranscriber:
                         })
                     
                     segments.append({
-                        "start": round(start, 2),
-                        "end": round(end, 2),
+                        "start": round(adj_start, 2),
+                        "end": round(adj_end, 2),
                         "text": clean_text,
                         "words": word_objs
                     })
@@ -78,7 +100,14 @@ class AudioTranscriber:
             logger.warning(f"Error parsing VTT: {e}")
         return segments
 
-    def transcribe_audio(self, audio_or_video_path: str, subtitle_path: Optional[str] = None, on_progress=None) -> List[Dict[str, Any]]:
+    def transcribe_audio(
+        self,
+        audio_or_video_path: str,
+        subtitle_path: Optional[str] = None,
+        section_offset: float = 0.0,
+        max_duration: Optional[float] = None,
+        on_progress=None
+    ) -> List[Dict[str, Any]]:
         """
         Transcribes audio with word-level timestamps.
         Tries pre-existing subtitle_path first, then faster-whisper.
@@ -86,7 +115,11 @@ class AudioTranscriber:
         if subtitle_path and Path(subtitle_path).exists():
             if on_progress:
                 on_progress("Parsing high-accuracy native transcript...", 40)
-            segments = self.parse_vtt(subtitle_path)
+            segments = self.parse_vtt(
+                subtitle_path,
+                section_offset=section_offset,
+                max_duration=max_duration
+            )
             if segments:
                 return segments
 

@@ -159,21 +159,21 @@ def record_demo():
                         reasons: ['🔥 Loudness Spike (+8.4 dB)', '⚡ High Action Scene Cut', '🌴 Vice City Hook Detected'],
                         seo: {
                             instagram: {
-                                caption: "Wait until you notice this in GTA 6… 🤯🌴\\n\\nRockstar Games is taking Vice City to a whole new level of realism and chaos! Drop a comment if you're ready for 2025! 👇\\n\\n⚡ Follow for daily GTA 6 leaks & clips!\\n#GTA6 #GrandTheftAuto6 #ViceCity #GamingReels #GTA6Trailer"
+                                caption: "Wait until you notice this in GTA 6… 🤯🌴\\n\\nRockstar Games is taking Vice City to a whole new level of realism and chaos! Drop a comment if you're ready for 2025! 👇\\n\\n⚡ Follow for daily GTA 6 leaks & clips!\\n#arunny2412 #GTA6 #GrandTheftAuto6 #ViceCity #GamingReels #GTA6Trailer"
                             },
                             youtube: {
                                 title: "GTA 6 Did WHAT?! 🤯 (Secret Gameplay Reveal) #shorts",
-                                description: "🔥 Watch this crazy GTA 6 moment! Lucia and Jason in Vice City.\\n\\n🎮 Game: Grand Theft Auto VI (Rockstar Games)\\n📈 Virality Peak: 96% Action Density\\n#GTA6 #GamingShorts #RockstarGames #ViceCity #Shorts",
-                                tags: "gta 6, grand theft auto 6, gta vi, gta 6 gameplay, gta 6 clips, vice city, rockstar games, viral shorts"
+                                description: "🔥 Watch this crazy GTA 6 moment! Lucia and Jason in Vice City.\\n\\n🎮 Game: Grand Theft Auto VI (Rockstar Games)\\n📈 Virality Peak: 96% Action Density\\n#arunny2412 #GTA6 #GamingShorts #RockstarGames #ViceCity #Shorts",
+                                tags: "arunny2412, gta 6, grand theft auto 6, gta vi, gta 6 gameplay, gta 6 clips, vice city, rockstar games, viral shorts"
                             },
                             tiktok: {
-                                caption: "Rockstar really put this in GTA 6?! 💀🔥 The attention to detail is actually terrifying. #gta6 #grandtheftauto #vicecity #gaming #gamingontiktok",
+                                caption: "Rockstar really put this in GTA 6?! 💀🔥 The attention to detail is actually terrifying. #arunny2412 #gta6 #grandtheftauto #vicecity #gaming #gamingontiktok",
                                 sound_tip: "Pair with 'Vice City Synthwave 80s' trending audio at 12% volume under speech."
                             },
                             rumble: {
                                 title: "GTA 6 Gameplay Breakdown - Lucia Vice City Reveal (High-Action Scene)",
-                                description: "Full commentary and breakdown of Grand Theft Auto VI high-octane viral moment.",
-                                tags: "gta 6, grand theft auto 6, rockstar games, vice city, gameplay"
+                                description: "Full commentary and breakdown of Grand Theft Auto VI high-octane viral moment.\\n\\n#arunny2412 #gta6 #gaming #vicecity",
+                                tags: "arunny2412, gta 6, grand theft auto 6, rockstar games, vice city, gameplay"
                             }
                         }
                     },
@@ -186,21 +186,21 @@ def record_demo():
                         reasons: ['🚗 High Speed Police Chase', '🌴 Vice City Nightclub Ambience', '🔊 Audio Dynamic Surge'],
                         seo: {
                             instagram: {
-                                caption: "Vice City night graphics are unmatched 🌃✨ GTA 6 is going to break the internet!\\n\\n#GTA6 #Gaming #Rockstar #ViceCity"
+                                caption: "Vice City night graphics are unmatched 🌃✨ GTA 6 is going to break the internet!\\n\\n#arunny2412 #GTA6 #Gaming #Rockstar #ViceCity"
                             },
                             youtube: {
                                 title: "This GTA 6 Scene Is INSANE! 🔥 #shorts",
-                                description: "Watch the police chase through downtown Vice City in GTA 6!",
-                                tags: "gta 6, grand theft auto, gaming shorts, ps5 gameplay"
+                                description: "Watch the police chase through downtown Vice City in GTA 6!\\n\\n#arunny2412 #GTA6 #GamingShorts",
+                                tags: "arunny2412, gta 6, grand theft auto, gaming shorts, ps5 gameplay"
                             },
                             tiktok: {
-                                caption: "The graphics in GTA 6 look like real life 😭 #gta6 #gaming #fyp",
+                                caption: "The graphics in GTA 6 look like real life 😭 #arunny2412 #gta6 #gaming #fyp",
                                 sound_tip: "Original audio with bass boost"
                             },
                             rumble: {
                                 title: "GTA 6 Vice City Night Chase Scene Breakdown",
-                                description: "Detailed look at the police response and neon lighting in GTA 6.",
-                                tags: "gta 6, rockstar, ps5, xbox"
+                                description: "Detailed look at the police response and neon lighting in GTA 6.\\n\\n#arunny2412 #gta6 #gaming",
+                                tags: "arunny2412, gta 6, rockstar, ps5, xbox"
                             }
                         }
                     }

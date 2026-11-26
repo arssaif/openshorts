@@ -41,10 +41,10 @@ Drop a LIKE and SUBSCRIBE if you're hyped for Grand Theft Auto VI in Vice City! 
 🕹️ Platform: PS5, Xbox Series X/S, PC
 📈 Virality Peak: {score}% Action Density
 
-#GTA6 #GrandTheftAuto6 #GTA6Clips #GamingShorts #RockstarGames #ViceCity #GTA6Trailer #Shorts
+#arunny2412 #GTA6 #GrandTheftAuto6 #GTA6Clips #GamingShorts #RockstarGames #ViceCity #GTA6Trailer #Shorts
 """
         yt_tags = [
-            "gta 6", "grand theft auto 6", "gta vi", "gta 6 gameplay", "gta 6 clips",
+            "arunny2412", "gta 6", "grand theft auto 6", "gta vi", "gta 6 gameplay", "gta 6 clips",
             "gta 6 trailer", "vice city", "lucia gta 6", "jason gta 6", "rockstar games",
             "gta 6 leaks", "gta 6 graphics", "ps5 gameplay", "gaming shorts", "viral gaming"
         ]
@@ -59,18 +59,21 @@ Rockstar Games is taking Vice City to a whole new level of realism and chaos! Wh
 ⚡ Follow for daily GTA 6 leaks, updates & viral gameplay clips!
 .
 .
-#GTA6 #GrandTheftAuto #RockstarGames #ViceCity #GTA6News #GTAV #GamingReels #GTA6Trailer #GamerLife #PlayStation5 #XboxSeriesX #GamingCommunity #GTAOnline #Leonida #GamingMemes #GTA6Leakes #ViceCityVibes #NextGenGaming #GamerGram #InstaGaming
+#arunny2412 #GTA6 #GrandTheftAuto #RockstarGames #ViceCity #GTA6News #GTAV #GamingReels #GTA6Trailer #GamerLife #PlayStation5 #XboxSeriesX #GamingCommunity #GTAOnline #Leonida #GamingMemes #GTA6Leakes #ViceCityVibes #NextGenGaming #GamerGram #InstaGaming
 """
 
         # 3. TikTok Metadata
-        tiktok_caption = f"Bro GTA 6 graphics look unreal 😭💀 Wait for it... #{' '.join(['gta6', 'gaming', 'grandtheftauto', 'rockstargames', 'fyp', 'viral'])}"
+        tiktok_tags = ["#arunny2412", "#gta6", "#gaming", "#grandtheftauto", "#rockstargames", "#fyp", "#viral"]
+        tiktok_caption = f"Bro GTA 6 graphics look unreal 😭💀 Wait for it... {' '.join(tiktok_tags)}"
 
         # 4. Rumble Metadata
         rumble_title = f"GTA 6 Insane Scene & Gameplay Highlight - {clean_title}"
         rumble_description = f"""High-energy GTA 6 gameplay sequence featuring: {hook_text}.
 Recorded and reframed in full 60FPS vertical format.
-Check out more GTA 6 updates and gameplay highlights on our channel!"""
-        rumble_tags = "gta6, grand theft auto 6, gaming, vice city, rockstar games, video games, gta vi clips"
+Check out more GTA 6 updates and gameplay highlights on our channel!
+
+#arunny2412 #gta6 #gaming #vicecity"""
+        rumble_tags = "arunny2412, gta6, grand theft auto 6, gaming, vice city, rockstar games, video games, gta vi clips"
 
         return {
             "youtube": {
@@ -82,7 +85,7 @@ Check out more GTA 6 updates and gameplay highlights on our channel!"""
             "instagram": {
                 "caption": ig_caption.strip(),
                 "hook": hook_text,
-                "hashtags_count": 20
+                "hashtags_count": 21
             },
             "tiktok": {
                 "caption": tiktok_caption,

@@ -22,7 +22,8 @@ def main():
     parser.add_argument("--layout", "-l", choices=["split", "blur", "crop"], default="split", help="9:16 vertical layout (default: split)")
     parser.add_argument("--no-anti-copyright", action="store_true", help="Disable anti-copyright filters")
     parser.add_argument("--subtitles", "-s", choices=["hormozi", "vice_city", "clean"], default="hormozi", help="Subtitle animation style")
-    parser.add_argument("--section", choices=["full", "first_half", "middle", "last_half"], default="full", help="Video section: full, first_half (0-50%%), middle (25-75%%), last_half (50-100%%)")
+    parser.add_argument("--section", choices=["full", "first_half", "middle", "last_half"], default="full", help="Video section: full, first_half (0-33%%), middle (33-67%%), last_half (67-100%%)")
+    parser.add_argument("--preset", "-p", choices=["gta6_viral", "story_cutscene", "action_montage"], default="gta6_viral", help="Viral scoring preset (default: gta6_viral)")
     parser.add_argument("--json", action="store_true", help="Output results as JSON")
 
     args = parser.parse_args()
@@ -44,6 +45,7 @@ def main():
             enable_anti_copyright=not args.no_anti_copyright,
             subtitle_style=args.subtitles,
             video_section=args.section,
+            preset=args.preset,
             progress_cb=on_progress
         )
 

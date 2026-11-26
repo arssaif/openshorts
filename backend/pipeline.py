@@ -39,6 +39,7 @@ class ClippingPipeline:
         enable_anti_copyright: bool = True,
         subtitle_style: str = "hormozi",
         video_section: str = "full",
+        preset: str = "gta6_viral",
         progress_cb: Optional[Callable[[str, int], None]] = None
     ) -> Dict[str, Any]:
         """
@@ -52,7 +53,7 @@ class ClippingPipeline:
             if progress_cb:
                 progress_cb(msg, pct)
 
-        update("Starting GTA 6 Clipping Job...", 5)
+        update(f"Starting GTA 6 Clipping Job (Preset: {preset}, Section: {video_section})...", 5)
 
         # 1. Video Ingestion
         is_local = Path(url_or_file).exists()
@@ -73,14 +74,14 @@ class ClippingPipeline:
             duration = raw_duration
             sub_path = None
 
-            # Fast section slicing for long local gameplay videos (> 10 mins)
-            if video_section in ["first_half", "middle", "last_half"] and raw_duration > 600.0:
+            # Non-overlapping section slicing for local videos longer than 2x clip duration
+            if video_section in ["first_half", "middle", "last_half"] and raw_duration > max(90.0, clip_duration * 2.0):
                 if video_section == "first_half":
-                    sec_start, sec_end = 0.0, raw_duration * 0.5
+                    sec_start, sec_end = 0.0, raw_duration / 3.0
                 elif video_section == "middle":
-                    sec_start, sec_end = raw_duration * 0.25, raw_duration * 0.75
-                elif video_section == "last_half":
-                    sec_start, sec_end = raw_duration * 0.5, raw_duration
+                    sec_start, sec_end = raw_duration / 3.0, raw_duration * (2.0 / 3.0)
+                else:  # "last_half"
+                    sec_start, sec_end = raw_duration * (2.0 / 3.0), raw_duration
 
                 slice_dur = sec_end - sec_start
                 if slice_dur > 2100.0:
@@ -117,11 +118,13 @@ class ClippingPipeline:
         transcript = self.transcriber.transcribe_audio(
             video_path,
             subtitle_path=sub_path,
+            section_offset=section_offset,
+            max_duration=duration,
             on_progress=update
         )
 
         # 3. AI Virality & Peak Action Detection
-        update("Scanning action peaks, loudness spikes and audience excitement...", 50)
+        update(f"Scanning {preset} peaks, loudness spikes and audience excitement...", 50)
         top_moments = self.analyzer.find_top_clips(
             video_path=video_path,
             total_duration=duration,
@@ -130,6 +133,7 @@ class ClippingPipeline:
             clip_duration=clip_duration,
             timestamp_comments=timestamp_comments,
             section_offset=section_offset,
+            preset=preset,
             on_progress=update
         )
 
@@ -210,6 +214,8 @@ class ClippingPipeline:
             "video_title": video_title,
             "total_duration": duration,
             "elapsed_seconds": elapsed,
+            "preset": preset,
+            "video_section": video_section,
             "clips": results
         }
 

@@ -43,6 +43,7 @@ class ClipRequest(BaseModel):
     enable_anti_copyright: bool = True
     subtitle_style: str = "hormozi" # "hormozi", "vice_city", "clean"
     video_section: str = "full" # "full", "first_half", "middle", "last_half"
+    preset: str = "gta6_viral" # "gta6_viral", "story_cutscene", "action_montage"
 
 @app.get("/api/health")
 async def health():
@@ -70,6 +71,7 @@ def run_job_task(job_id: str, req: ClipRequest):
             enable_anti_copyright=req.enable_anti_copyright,
             subtitle_style=req.subtitle_style,
             video_section=req.video_section,
+            preset=req.preset,
             progress_cb=on_progress
         )
         jobs_state[job_id]["status"] = "completed"

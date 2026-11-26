@@ -29,6 +29,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const hwBadge = document.getElementById("hw-badge");
 
   let uploadedFilePath = null;
+  let activePreset = "gta6_viral";
 
   // 1. Check Health & GPU encoder
   fetch("/api/health")
@@ -106,6 +107,7 @@ document.addEventListener("DOMContentLoaded", () => {
     pill.addEventListener("click", () => {
       presetPills.forEach(p => p.classList.remove("active"));
       pill.classList.add("active");
+      activePreset = pill.dataset.preset || "gta6_viral";
 
       const cfg = PRESET_MAP[pill.dataset.preset];
       if (cfg) {
@@ -138,6 +140,8 @@ document.addEventListener("DOMContentLoaded", () => {
       c.addEventListener("click", () => {
         cards.forEach(other => other.classList.remove("active"));
         c.classList.add("active");
+        const input = c.querySelector("input");
+        if (input) input.checked = true;
       });
     });
   }
@@ -187,7 +191,7 @@ document.addEventListener("DOMContentLoaded", () => {
     generateBtn.style.opacity = "0.5";
 
     appendLog(`Job initialized for: ${url.startsWith("http") ? url : "Local video"}`);
-    appendLog(`Settings: Layout=${layout}, Subtitles=${subStyle}, Section=${videoSection}, AntiCopyright=${antiCopy}`);
+    appendLog(`Settings: Preset=${activePreset}, Layout=${layout}, Subtitles=${subStyle}, Section=${videoSection}, AntiCopyright=${antiCopy}`);
 
     try {
       const response = await fetch("/api/clip", {
@@ -200,7 +204,8 @@ document.addEventListener("DOMContentLoaded", () => {
           layout: layout,
           enable_anti_copyright: antiCopy,
           subtitle_style: subStyle,
-          video_section: videoSection
+          video_section: videoSection,
+          preset: activePreset
         })
       });
 
@@ -251,6 +256,15 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // 6. Render Results & SEO Tabs
+  function formatTimestamp(sec) {
+    const s = Math.max(0, Math.floor(sec || 0));
+    const h = Math.floor(s / 3600);
+    const m = Math.floor((s % 3600) / 60);
+    const rem = s % 60;
+    const pad = (n) => String(n).padStart(2, "0");
+    return h > 0 ? `${h}:${pad(m)}:${pad(rem)}` : `${m}:${pad(rem)}`;
+  }
+
   function renderResults(clips) {
     resultsSection.style.display = "block";
     resultsSection.scrollIntoView({ behavior: "smooth" });
@@ -260,6 +274,11 @@ document.addEventListener("DOMContentLoaded", () => {
       card.className = "clip-card";
 
       const reasonsHTML = clip.reasons.map(r => `<span class="reason-tag">${r}</span>`).join("");
+      const absStart = clip.absolute_start !== undefined ? clip.absolute_start : clip.start;
+      const absEnd = clip.absolute_end !== undefined ? clip.absolute_end : clip.end;
+      const timeRange = (absStart !== undefined && absEnd !== undefined)
+        ? ` • ${formatTimestamp(absStart)} - ${formatTimestamp(absEnd)}`
+        : "";
 
       card.innerHTML = `
         <div class="clip-video-container">
@@ -271,7 +290,7 @@ document.addEventListener("DOMContentLoaded", () => {
         </div>
         <div class="clip-meta-body">
           <div>
-            <h4 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 0.3rem;">Clip #${i+1} (${clip.duration}s)</h4>
+            <h4 style="font-size: 1.05rem; font-weight: 700; margin-bottom: 0.3rem;">Clip #${i+1} (${clip.duration}s${timeRange})</h4>
             <div class="clip-reasons">${reasonsHTML}</div>
           </div>
 
